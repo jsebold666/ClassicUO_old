@@ -82,7 +82,7 @@ namespace ClassicUO.Game.Managers
                     }
                 }
             }
-            if (e != null)
+            if (e != null && !e.IsDestroyed)
             {
                 Name = e.Name;
                 serial = e.Serial;
@@ -90,18 +90,24 @@ namespace ClassicUO.Game.Managers
                 GameActions.Print("Entity  is not null Is wme != null  " + e.Name + " Name: " + mob.Name + " nameCache: " + nameCache[serial]);
             }
            
-         
-            if (nameCache.TryGetValue(serial, out string cachedName))
+            if (mob != null && !mob.IsDestroyed || e != null && !e.IsDestroyed)
             {
-                var teste = string.IsNullOrEmpty(Name) ? cachedName : Name;
-                GameActions.Print("Entity  is not null Is wme != null  " + teste);
-                return string.IsNullOrEmpty(Name) ? cachedName : Name;
+                if (nameCache.TryGetValue(serial, out string cachedName))
+                {
+                    var teste = string.IsNullOrEmpty(Name) ? cachedName : Name;
+                    GameActions.Print("Entity  is not null Is wme != null  " + teste); 
+                    return string.IsNullOrEmpty(Name) ? cachedName : Name;
+                }
+                else
+                {
+                    return string.IsNullOrEmpty(Name) ? "<out of range>" : Name;
+                }
             }
+               
             else
             {
-                return string.IsNullOrEmpty(Name) ? "<out of range>" : Name;
+                return null;
             }
-            
             
 
 
@@ -325,9 +331,9 @@ namespace ClassicUO.Game.Managers
                         }
 
                         Mobile mobs = World.Mobiles.Get(mob.Serial);
-                        if (mobs.NotorietyFlag == NotorietyFlag.Ally)
+                        if (mobs.NotorietyFlag == NotorietyFlag.Ally )
                         {
-                            if (mobs == null || mobs.Distance > 2000000)
+                            if (mobs == null && !mobs.IsDestroyed)
                             {
                                 NetClient.Socket.Send_QueryGuildPosition();
 
