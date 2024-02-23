@@ -414,7 +414,7 @@ namespace ClassicUO.Configuration
         public int DontRemoveHouseBelowZ { get; set; } = 6;
         public bool DrawMobilesWithSurfaceOverhead { get; set; } = false;
         public bool IgnoreCoTEnabled { get; set; } = false;
-        public bool ShowDeathOnWorldmap { get; set; } = false;
+        public bool ShowDeathOnWorldmap { get; set; } = true;
         // ## BEGIN - END ## // MISC2
         // ## BEGIN - END ## // MACROS
         public int LastTargetRange { get; set; }
@@ -580,6 +580,7 @@ namespace ClassicUO.Configuration
         // ## BEGIN - END ## // MODERNCOOLDOWNBAR
         // ## BEGIN - END ## // ONCASTINGGUMP
         public bool OnCastingGump { get; set; }
+        public bool ShowMapCloseFriend { get; set;}
         public bool OnCastingGump_hidden { get; set; } = false;
         // ## BEGIN - END ## // ONCASTINGGUMP
         // ## BEGIN - END ## // MISC3 SHOWALLLAYERS

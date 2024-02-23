@@ -294,7 +294,7 @@ namespace ClassicUO.Game
                 {
                     mob.Update();
 
-                    if (do_delete && mob.Distance > ClientViewRange /*CheckToRemove(mob, ClientViewRange)*/)
+                    if (do_delete && mob.Distance > 20000000000 /*CheckToRemove(mob, ClientViewRange)*/)
                     {
                         RemoveMobile(mob);
                     }
@@ -305,7 +305,8 @@ namespace ClassicUO.Game
                     }
                     else
                     {
-                        if (mob.NotorietyFlag == NotorietyFlag.Ally)
+                        WMapEntity wme = WMapManager.GetEntity(mob.Serial);
+                        if (mob.NotorietyFlag == NotorietyFlag.Ally || ProfileManager.CurrentProfile.ShowDeathOnWorldmap && wme != null && wme.IsGuild || ProfileManager.CurrentProfile.ShowDeathOnWorldmap && mob.IsRenamable)
                         {
                             WMapManager.AddOrUpdate
                             (
@@ -318,6 +319,7 @@ namespace ClassicUO.Game
                                 mob.Name
                             );
                         }
+        
                         else if (Party.Leader != 0 && Party.Contains(mob))
                         {
                             WMapManager.AddOrUpdate
