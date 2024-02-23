@@ -2362,7 +2362,7 @@ namespace ClassicUO.Game.UI.Gumps
                     }
                     else
                     {
-                        if (mob != null && mob.Distance <= World.ClientViewRange)
+                        if (mob != null)
                         {
                             WMapEntity wme = World.WMapManager.GetEntity(mob);
 
@@ -2395,7 +2395,7 @@ namespace ClassicUO.Game.UI.Gumps
                         {
                             WMapEntity wme = World.WMapManager.GetEntity(mob.Serial);
 
-                            if (wme != null && wme.IsGuild)
+                            if (wme != null)
                             {
                                 DrawWMEntity
                                 (
@@ -2440,7 +2440,7 @@ namespace ClassicUO.Game.UI.Gumps
                     {
                         Mobile mob = World.Mobiles.Get(partyMember.Serial);
 
-                        if (mob != null && mob.Distance <= World.ClientViewRange)
+                        if (mob != null)
                         {
                             WMapEntity wme = World.WMapManager.GetEntity(mob);
 
@@ -2448,7 +2448,7 @@ namespace ClassicUO.Game.UI.Gumps
                             {
                                 if (string.IsNullOrEmpty(wme.Name) && !string.IsNullOrEmpty(partyMember.Name))
                                 {
-                                    wme.Name = partyMember.Name;
+                                    wme.Name = wme.GetName(partyMember.Serial);
                                 }
                             }
 
@@ -2471,7 +2471,7 @@ namespace ClassicUO.Game.UI.Gumps
                         {
                             WMapEntity wme = World.WMapManager.GetEntity(partyMember.Serial);
 
-                            if (wme != null && !wme.IsGuild)
+                            if (wme != null)
                             {
                                 DrawWMEntity
                                 (

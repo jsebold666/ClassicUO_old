@@ -69,7 +69,7 @@ namespace ClassicUO.Game.Managers
         {
             Entity e = World.Get(Serial);
 
-            if (e != null && !e.IsDestroyed && !string.IsNullOrEmpty(e.Name) && Name != e.Name)
+            if (e != null && !string.IsNullOrEmpty(e.Name) && Name != e.Name)
             {
                 Name = e.Name;
                 nameCache[Serial] = Name;
@@ -276,7 +276,7 @@ namespace ClassicUO.Game.Managers
                         {
                             Mobile mob = World.Mobiles.Get(e.Serial);
 
-                            if (mob == null || mob.Distance > World.ClientViewRange)
+                            if (mob == null)
                             {
                                 NetClient.Socket.Send_QueryPartyPosition();
 
@@ -285,6 +285,30 @@ namespace ClassicUO.Game.Managers
                         }
                     }
                 }
+                else
+                {
+                    foreach (Mobile mob in World.Mobiles.Values)
+                    {
+                        if (mob == World.Player)
+                        {
+                            continue;
+                        }
+
+                        Mobile mobs = World.Mobiles.Get(mob.Serial);
+                     
+                        if (mobs == null)
+                        {
+                            NetClient.Socket.Send_QueryGuildPosition();
+
+                            break;
+                        }
+                        
+
+                    }
+
+                }
+     
+                
             }
         }
 
