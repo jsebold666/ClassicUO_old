@@ -65,9 +65,16 @@ namespace ClassicUO.Dust765.External
                 SpellAction spell = (SpellAction)_spell_id;
                 circle = (uint)SpellManager.GetCircle(spell);
                 uint protection_delay = 0;
+             
                 if (World.Player.IsBuffIconExists(BuffIconType.Protection) || World.Player.IsBuffIconExists(BuffIconType.ArchProtection))
                 {
-                    protection_delay = protection_delay + 4;
+                    if (spell == SpellAction.Protection || spell == SpellAction.ArchProtection) {
+                        protection_delay = 0;
+                    } else
+                    {
+                        protection_delay = protection_delay + 4;
+                    }
+                    
                 }
                 _endTime = _startTime + 400 + (circle + protection_delay) * 250 + _re; // (0.5+ 0.25 * circle) * 1000
                 GameActions.iscasting = true;
