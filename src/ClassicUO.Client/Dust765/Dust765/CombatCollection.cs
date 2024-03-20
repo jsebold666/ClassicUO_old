@@ -1451,7 +1451,7 @@ namespace ClassicUO.Dust765.Dust765
         //NETWORK\PACKETHANDLERS.CS
         public static void SpecialSetLastTargetCliloc(uint target)
         {
-            if (!ProfileManager.CurrentProfile.SpecialSetLastTargetCliloc)
+            if (ProfileManager.CurrentProfile.SpecialSetLastTargetCliloc)
             {
                 TargetManager.LastTargetInfo.Serial = target;
                 TargetManager.LastTargetInfo.SetEntity(target);

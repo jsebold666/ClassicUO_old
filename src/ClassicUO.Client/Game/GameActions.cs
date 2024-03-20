@@ -352,14 +352,7 @@ namespace ClassicUO.Game
            
             return true;
         }
-                          
-        public static void LastTarget(uint serial)
-        {
-
-            TargetManager.Target(serial);
-            Socket.Send_AttackRequest(serial);
-            
-        }
+                        
 
         public static void Attack(uint serial)
         {

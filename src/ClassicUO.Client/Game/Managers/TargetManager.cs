@@ -266,6 +266,194 @@ namespace ClassicUO.Game.Managers
             );
         }
 
+        public static void TargetOut(uint serial, Entity? entityOut)
+        {
+            if (!IsTargeting)
+            {
+                return;
+            }
+
+            Entity entitynew = World.InGame ? World.Get(serial) : null;
+
+            Entity entity = World.InGame && entitynew == null && entityOut != null ? entityOut : null;
+
+
+
+            if (entity != null)
+            {
+                switch (TargetingState)
+                {
+                    case CursorTarget.Invalid: return;
+
+                    case CursorTarget.MultiPlacement:
+                    case CursorTarget.Position:
+                    case CursorTarget.Object:
+                    case CursorTarget.HueCommandTarget:
+                    case CursorTarget.SetTargetClientSide:
+
+                        if (entity != World.Player)
+                        {
+                            LastTargetInfo.SetEntity(serial);
+                        }
+
+                        if (SerialHelper.IsMobile(serial) && serial != World.Player && (World.Player.NotorietyFlag == NotorietyFlag.Innocent || World.Player.NotorietyFlag == NotorietyFlag.Ally))
+                        {
+                            Mobile mobile = entity as Mobile;
+
+                            if (mobile != null)
+                            {
+                                bool showCriminalQuery = false;
+
+                                if (TargetingType == TargetType.Harmful && ProfileManager.CurrentProfile.EnabledCriminalActionQuery && mobile.NotorietyFlag == NotorietyFlag.Innocent)
+                                {
+                                    showCriminalQuery = true;
+                                }
+                                else if (TargetingType == TargetType.Beneficial && ProfileManager.CurrentProfile.EnabledBeneficialCriminalActionQuery && (mobile.NotorietyFlag == NotorietyFlag.Criminal || mobile.NotorietyFlag == NotorietyFlag.Murderer || mobile.NotorietyFlag == NotorietyFlag.Gray))
+                                {
+                                    showCriminalQuery = true;
+                                }
+
+                                if (showCriminalQuery && UIManager.GetGump<QuestionGump>() == null)
+                                {
+                                    QuestionGump messageBox = new QuestionGump
+                                    (
+                                        "This may flag\nyou criminal!",
+                                        s =>
+                                        {
+                                            if (s)
+                                            {
+                                                NetClient.Socket.Send_TargetObject(entity,
+                                                                                   entity.Graphic,
+                                                                                   entity.X,
+                                                                                   entity.Y,
+                                                                                   entity.Z,
+                                                                                   _targetCursorId,
+                                                                                   (byte)TargetingType);
+
+                                                ClearTargetingWithoutTargetCancelPacket();
+
+                                                if (LastTargetInfo.Serial != serial)
+                                                {
+                                                    GameActions.RequestMobileStatus(serial);
+                                                }
+                                            }
+                                        }
+                                    );
+
+                                    UIManager.Add(messageBox);
+
+                                    return;
+                                }
+                            }
+                        }
+
+                        if (TargetingState != CursorTarget.SetTargetClientSide)
+                        {
+                            _lastDataBuffer[0] = 0x6C;
+
+                            _lastDataBuffer[1] = 0x00;
+
+                            _lastDataBuffer[2] = (byte)(_targetCursorId >> 24);
+                            _lastDataBuffer[3] = (byte)(_targetCursorId >> 16);
+                            _lastDataBuffer[4] = (byte)(_targetCursorId >> 8);
+                            _lastDataBuffer[5] = (byte)_targetCursorId;
+
+                            _lastDataBuffer[6] = (byte)TargetingType;
+
+                            _lastDataBuffer[7] = (byte)(entity.Serial >> 24);
+                            _lastDataBuffer[8] = (byte)(entity.Serial >> 16);
+                            _lastDataBuffer[9] = (byte)(entity.Serial >> 8);
+                            _lastDataBuffer[10] = (byte)entity.Serial;
+
+                            _lastDataBuffer[11] = (byte)(entity.X >> 8);
+                            _lastDataBuffer[12] = (byte)entity.X;
+
+                            _lastDataBuffer[13] = (byte)(entity.Y >> 8);
+                            _lastDataBuffer[14] = (byte)entity.Y;
+
+                            _lastDataBuffer[15] = (byte)(entity.Z >> 8);
+                            _lastDataBuffer[16] = (byte)entity.Z;
+
+                            _lastDataBuffer[17] = (byte)(entity.Graphic >> 8);
+                            _lastDataBuffer[18] = (byte)entity.Graphic;
+
+
+                            NetClient.Socket.Send_TargetObject(entity,
+                                                               entity.Graphic,
+                                                               entity.X,
+                                                               entity.Y,
+                                                               entity.Z,
+                                                               _targetCursorId,
+                                                               (byte)TargetingType);
+
+                            if (SerialHelper.IsMobile(serial) && LastTargetInfo.Serial != serial)
+                            {
+                                GameActions.RequestMobileStatus(serial);
+                            }
+                        }
+
+                        ClearTargetingWithoutTargetCancelPacket();
+
+                        Mouse.CancelDoubleClick = true;
+
+                        break;
+
+                    case CursorTarget.Grab:
+
+                        if (SerialHelper.IsItem(serial))
+                        {
+                            GameActions.GrabItem(serial, ((Item)entity).Amount);
+                        }
+
+                        ClearTargetingWithoutTargetCancelPacket();
+
+                        return;
+
+                    case CursorTarget.SetGrabBag:
+
+                        if (SerialHelper.IsItem(serial))
+                        {
+                            ProfileManager.CurrentProfile.GrabBagSerial = serial;
+                            GameActions.Print(string.Format(ResGeneral.GrabBagSet0, serial));
+                        }
+
+                        ClearTargetingWithoutTargetCancelPacket();
+
+                        return;
+                    case CursorTarget.IgnorePlayerTarget:
+                        if (SelectedObject.Object is Entity pmEntity)
+                        {
+                            IgnoreManager.AddIgnoredTarget(pmEntity);
+                        }
+                        CancelTarget();
+                        return;
+
+                    // ## BEGIN - END ## // ADVMACROS
+                    case CursorTarget.SetCustomSerial:
+
+                        if (SerialHelper.IsItem(serial))
+                        {
+                            ProfileManager.CurrentProfile.CustomSerial = serial;
+                            GameActions.Print($"Custom UOClassicEquipment Item set: {serial}", 88);
+                        }
+                        else if ((TargetingType == TargetType.Neutral && SerialHelper.IsMobile(serial)))
+                        {
+                            Mobile mobile = entity as Mobile;
+
+                            if ((!World.Player.IsDead && !mobile.IsDead) && serial != World.Player)
+                            {
+                                ProfileManager.CurrentProfile.Mimic_PlayerSerial = entity;
+                                GameActions.Print($"Mimic Player Serial Set: {entity.Name} : {entity.Serial}", 88);
+                            }
+                        }
+
+                        ClearTargetingWithoutTargetCancelPacket();
+
+                        return;
+                        // ## BEGIN - END ## // ADVMACROS
+                }
+            }
+        }
 
         public static void Target(uint serial)
         {

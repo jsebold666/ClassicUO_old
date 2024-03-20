@@ -281,7 +281,8 @@ namespace ClassicUO.Game.UI.Gumps
                 if (ent == null)
                 {
                     CombatCollection.SpecialSetLastTargetCliloc(LocalSerial);
-                    //TargetManager.LastTargetInfo.Serial = LocalEntity.Serial;
+                    TargetManager.LastTargetInfo.Serial = LocalEntity.Serial;
+                    TargetManager.TargetOut(LocalSerial, LocalEntity);
                     TargetManager.CancelTarget();
 
                 }
