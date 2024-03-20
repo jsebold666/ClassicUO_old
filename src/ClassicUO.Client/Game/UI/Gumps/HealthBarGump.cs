@@ -31,8 +31,8 @@
 #endregion
 
 using System;
-using Microsoft.Extensions.Caching.Memory;
-using System.IO;
+
+
 using System.Xml;
 using ClassicUO.Configuration;
 using ClassicUO.Game.Data;
@@ -44,22 +44,22 @@ using ClassicUO.Game.Managers;
 using ClassicUO.Game.UI.Controls;
 using ClassicUO.Input;
 using ClassicUO.Assets;
-using ClassicUO.Network;
+
 using ClassicUO.Renderer;
 using ClassicUO.Resources;
+
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using SDL2;
 using System.Collections.Generic;
-using System.Xml.Linq;
-using System.Net.Sockets;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace ClassicUO.Game.UI.Gumps
 {
     internal abstract class BaseHealthBarGump : AnchorableGump
     {
         private bool _targetBroke;
-        public static readonly Dictionary<uint, Entity> entityCache = new Dictionary<uint, Entity>();
+        public static readonly MemoryCache entityCache = new MemoryCache(new MemoryCacheOptions());
 
         protected BaseHealthBarGump(Entity entity) : this(0, 0)
         {
@@ -79,9 +79,24 @@ namespace ClassicUO.Game.UI.Gumps
 
             // ## BEGIN - END ## // MISC
             LocalEntity = entity;
+            if (!entityCache.TryGetValue(entity.Serial, out Entity cachedEntity))
+            {
+                // A entidade não foi encontrada no cache, então a adicionamos
+                entityCache.Set(entity.Serial, entity, new MemoryCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(7),
+
+                    Priority = CacheItemPriority.High
+                });
+            } else
+            {
+                LocalEntity = cachedEntity;
+            }
+
             // ## BEGIN - END ## // MISC
 
             BuildGump();
+            
         }
 
         protected BaseHealthBarGump(uint serial) : this(World.Get(serial))
@@ -263,6 +278,7 @@ namespace ClassicUO.Game.UI.Gumps
         }
         // ## BEGIN - END ## // TAZUO
 
+
         protected override void OnMouseDown(int x, int y, MouseButtonType button)
         {
             if (button != MouseButtonType.Left)
@@ -280,10 +296,29 @@ namespace ClassicUO.Game.UI.Gumps
                 Entity ent = World.Get(LocalSerial);
                 if (ent == null)
                 {
-                    CombatCollection.SpecialSetLastTargetCliloc(LocalSerial);
-                    TargetManager.LastTargetInfo.Serial = LocalEntity.Serial;
-                    TargetManager.TargetOut(LocalSerial, LocalEntity);
-                    TargetManager.CancelTarget();
+                    if (LocalEntity != null)
+                    {
+                        TargetManager.LastTargetInfo.Serial = LocalEntity.Serial;
+                        TargetManager.TargetFromHealthBar(LocalSerial, LocalEntity);
+                    } else
+                    {
+
+                        Entity cachedEntity;
+                        if (entityCache.TryGetValue(LocalSerial, out cachedEntity))
+                        {
+                            
+
+                            TargetManager.LastTargetInfo.Serial = cachedEntity.Serial;
+                            TargetManager.TargetFromHealthBar(LocalSerial, cachedEntity);
+                        }
+                        else
+                        {
+                            GameActions.Print($"No has info for Target, need see for updates info.", 88);
+                        }
+
+                       
+                    } 
+                    
 
                 }
                 // ## BEGIN - END ## // MISC

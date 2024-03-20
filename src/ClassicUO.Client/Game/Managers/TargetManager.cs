@@ -266,7 +266,7 @@ namespace ClassicUO.Game.Managers
             );
         }
 
-        public static void TargetOut(uint serial, Entity? entityOut)
+        public static void TargetFromHealthBar(uint serial, Entity? entityOut)
         {
             if (!IsTargeting)
             {
@@ -296,57 +296,7 @@ namespace ClassicUO.Game.Managers
                             LastTargetInfo.SetEntity(serial);
                         }
 
-                        if (SerialHelper.IsMobile(serial) && serial != World.Player && (World.Player.NotorietyFlag == NotorietyFlag.Innocent || World.Player.NotorietyFlag == NotorietyFlag.Ally))
-                        {
-                            Mobile mobile = entity as Mobile;
-
-                            if (mobile != null)
-                            {
-                                bool showCriminalQuery = false;
-
-                                if (TargetingType == TargetType.Harmful && ProfileManager.CurrentProfile.EnabledCriminalActionQuery && mobile.NotorietyFlag == NotorietyFlag.Innocent)
-                                {
-                                    showCriminalQuery = true;
-                                }
-                                else if (TargetingType == TargetType.Beneficial && ProfileManager.CurrentProfile.EnabledBeneficialCriminalActionQuery && (mobile.NotorietyFlag == NotorietyFlag.Criminal || mobile.NotorietyFlag == NotorietyFlag.Murderer || mobile.NotorietyFlag == NotorietyFlag.Gray))
-                                {
-                                    showCriminalQuery = true;
-                                }
-
-                                if (showCriminalQuery && UIManager.GetGump<QuestionGump>() == null)
-                                {
-                                    QuestionGump messageBox = new QuestionGump
-                                    (
-                                        "This may flag\nyou criminal!",
-                                        s =>
-                                        {
-                                            if (s)
-                                            {
-                                                NetClient.Socket.Send_TargetObject(entity,
-                                                                                   entity.Graphic,
-                                                                                   entity.X,
-                                                                                   entity.Y,
-                                                                                   entity.Z,
-                                                                                   _targetCursorId,
-                                                                                   (byte)TargetingType);
-
-                                                ClearTargetingWithoutTargetCancelPacket();
-
-                                                if (LastTargetInfo.Serial != serial)
-                                                {
-                                                    GameActions.RequestMobileStatus(serial);
-                                                }
-                                            }
-                                        }
-                                    );
-
-                                    UIManager.Add(messageBox);
-
-                                    return;
-                                }
-                            }
-                        }
-
+                       
                         if (TargetingState != CursorTarget.SetTargetClientSide)
                         {
                             _lastDataBuffer[0] = 0x6C;
@@ -397,7 +347,6 @@ namespace ClassicUO.Game.Managers
                         Mouse.CancelDoubleClick = true;
 
                         break;
-
                     case CursorTarget.Grab:
 
                         if (SerialHelper.IsItem(serial))
@@ -451,6 +400,7 @@ namespace ClassicUO.Game.Managers
 
                         return;
                         // ## BEGIN - END ## // ADVMACROS
+
                 }
             }
         }

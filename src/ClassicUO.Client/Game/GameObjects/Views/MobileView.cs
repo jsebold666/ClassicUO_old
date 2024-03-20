@@ -210,6 +210,11 @@ namespace ClassicUO.Game.GameObjects
             }
 
             // ## BEGIN - END ## // VISUAL HELPERS
+            if (ProfileManager.CurrentProfile.HighlighFriendsGuildType != 0)
+            {
+                overridedHue = CombatCollection.LastFriendHue(this, overridedHue);
+                hueVec.Y = 1;
+            }
             if (ProfileManager.CurrentProfile.HighlightLastTargetType != 0 && World.Get(TargetManager.LastTargetInfo.Serial) == this)
             {
                 overridedHue = CombatCollection.LastTargetHue(this, overridedHue);
