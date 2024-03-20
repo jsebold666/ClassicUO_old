@@ -5,7 +5,8 @@
       "commandLineArgs": "-skiploginscreen "
     },
     "ClassicUO No SkipLoginScreen": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "commandLineArgs": "-skiploginscreen "
     }
   }
 }

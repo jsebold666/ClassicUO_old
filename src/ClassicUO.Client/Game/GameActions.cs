@@ -41,6 +41,7 @@ using ClassicUO.Input;
 using ClassicUO.Network;
 using ClassicUO.Resources;
 using ClassicUO.Utility;
+using ClassicUO.Utility.Platforms;
 using Microsoft.Xna.Framework;
 using static ClassicUO.Network.NetClient;
 
@@ -348,7 +349,16 @@ namespace ClassicUO.Game
                 backpackGump.BringOnTop();
             }
             // ## BEGIN - END ## // TAZUO
+           
             return true;
+        }
+                          
+        public static void LastTarget(uint serial)
+        {
+
+            TargetManager.Target(serial);
+            Socket.Send_AttackRequest(serial);
+            
         }
 
         public static void Attack(uint serial)

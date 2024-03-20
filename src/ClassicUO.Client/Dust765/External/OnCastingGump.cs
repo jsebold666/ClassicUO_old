@@ -65,16 +65,11 @@ namespace ClassicUO.Dust765.External
                 SpellAction spell = (SpellAction)_spell_id;
                 circle = (uint)SpellManager.GetCircle(spell);
                 uint protection_delay = 0;
-             
-                if (World.Player.IsBuffIconExists(BuffIconType.Protection) || World.Player.IsBuffIconExists(BuffIconType.ArchProtection))
-                {
-                    if (spell == SpellAction.Protection || spell == SpellAction.ArchProtection) {
-                        protection_delay = 0;
-                    } else
-                    {
-                        protection_delay = protection_delay + 4;
-                    }
-                    
+                bool ignore_proctetion_delay = (spell == SpellAction.Protection || spell == SpellAction.ArchProtection);
+                if (World.Player.IsBuffIconExists(BuffIconType.Protection) && !ignore_proctetion_delay
+                    || World.Player.IsBuffIconExists(BuffIconType.EssenceOfWind))
+                { 
+                    protection_delay = 2;
                 }
                 _endTime = _startTime + 400 + (circle + protection_delay) * 250 + _re; // (0.5+ 0.25 * circle) * 1000
                 GameActions.iscasting = true;

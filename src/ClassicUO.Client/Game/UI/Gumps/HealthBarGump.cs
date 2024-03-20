@@ -31,6 +31,7 @@
 #endregion
 
 using System;
+using Microsoft.Extensions.Caching.Memory;
 using System.IO;
 using System.Xml;
 using ClassicUO.Configuration;
@@ -49,12 +50,16 @@ using ClassicUO.Resources;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using SDL2;
+using System.Collections.Generic;
+using System.Xml.Linq;
+using System.Net.Sockets;
 
 namespace ClassicUO.Game.UI.Gumps
 {
     internal abstract class BaseHealthBarGump : AnchorableGump
     {
         private bool _targetBroke;
+        public static readonly Dictionary<uint, Entity> entityCache = new Dictionary<uint, Entity>();
 
         protected BaseHealthBarGump(Entity entity) : this(0, 0)
         {
@@ -67,6 +72,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             GameActions.RequestMobileStatus(entity.Serial, true);
             LocalSerial = entity.Serial;
+
             CanCloseWithRightClick = true;
             _name = entity.Name;
             _isDead = entity is Mobile mm && mm.IsDead;
@@ -264,8 +270,8 @@ namespace ClassicUO.Game.UI.Gumps
                 return;
             }
 
-            if (TargetManager.IsTargeting)
-            {
+            if (TargetManager.IsTargeting)            {
+
                 // ## BEGIN - END ## // MISC
                 //_targetBroke = true;
                 // ## BEGIN - END ## // MISC
@@ -274,17 +280,10 @@ namespace ClassicUO.Game.UI.Gumps
                 Entity ent = World.Get(LocalSerial);
                 if (ent == null)
                 {
-                    TargetManager.LastTargetInfo.Serial = LocalSerial;
+                    CombatCollection.SpecialSetLastTargetCliloc(LocalSerial);
+                    //TargetManager.LastTargetInfo.Serial = LocalEntity.Serial;
                     TargetManager.CancelTarget();
-                }
-            
-                else
-                {
-                    if (LocalEntity != null && LocalEntity.Serial != default)
-                    {
-                        TargetManager.LastTargetInfo.Serial = LocalEntity.Serial;
-                    }
-                    
+
                 }
                 // ## BEGIN - END ## // MISC
                 Mouse.LastLeftButtonClickTime = 0;

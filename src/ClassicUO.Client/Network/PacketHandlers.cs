@@ -3769,7 +3769,7 @@ namespace ClassicUO.Network
             }
 
             // ## BEGIN - END ## // MISC
-            if (text.StartsWith(ProfileManager.CurrentProfile.SpecialSetLastTargetClilocText.ToString()))
+            if (!text.StartsWith(ProfileManager.CurrentProfile.SpecialSetLastTargetClilocText.ToString()))
                 CombatCollection.SpecialSetLastTargetCliloc(serial);
             // ## BEGIN - END ## // MISC
             // ## BEGIN - END ## // OUTLANDS
