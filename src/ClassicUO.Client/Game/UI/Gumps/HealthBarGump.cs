@@ -44,15 +44,14 @@ using ClassicUO.Game.Managers;
 using ClassicUO.Game.UI.Controls;
 using ClassicUO.Input;
 using ClassicUO.Assets;
-
 using ClassicUO.Renderer;
 using ClassicUO.Resources;
-
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using SDL2;
-using System.Collections.Generic;
 using Microsoft.Extensions.Caching.Memory;
+using System.Xml.Linq;
+using System.Text.Json;
 
 namespace ClassicUO.Game.UI.Gumps
 {
@@ -71,14 +70,14 @@ namespace ClassicUO.Game.UI.Gumps
             }
 
             GameActions.RequestMobileStatus(entity.Serial, true);
-            LocalSerial = entity.Serial;
+            _localSerial = entity.Serial;
 
             CanCloseWithRightClick = true;
             _name = entity.Name;
             _isDead = entity is Mobile mm && mm.IsDead;
 
             // ## BEGIN - END ## // MISC
-            LocalEntity = entity;
+            _localEntity = entity;
             if (!entityCache.TryGetValue(entity.Serial, out Entity cachedEntity))
             {
                 // A entidade não foi encontrada no cache, então a adicionamos
@@ -90,7 +89,7 @@ namespace ClassicUO.Game.UI.Gumps
                 });
             } else
             {
-                LocalEntity = cachedEntity;
+                _localEntity = cachedEntity;
             }
 
             // ## BEGIN - END ## // MISC
@@ -127,6 +126,8 @@ namespace ClassicUO.Game.UI.Gumps
         protected bool _isDead;
         protected string _name;
         protected bool _outOfRange;
+        protected uint _localSerial;
+        protected Entity _localEntity;
         protected StbTextBox _textBox;
         // ## BEGIN - END ## // OUTLANDS
         //protected StbTextBox _timersTextBox;
@@ -160,8 +161,12 @@ namespace ClassicUO.Game.UI.Gumps
             if (ProfileManager.CurrentProfile.SaveHealthbars)
             {
                 writer.WriteAttributeString("name", _name);
+                writer.WriteAttributeString("serial", _localSerial.ToString());
+                string json = JsonSerializer.Serialize(_localEntity);
+                writer.WriteAttributeString("entity", json);
             }
         }
+
 
         public override void Restore(XmlElement xml)
         {
@@ -175,8 +180,38 @@ namespace ClassicUO.Game.UI.Gumps
             else if (ProfileManager.CurrentProfile.SaveHealthbars)
             {
                 _name = xml.GetAttribute("name");
-                _outOfRange = true;
-                BuildGump();
+               
+
+                string serialString = xml.GetAttribute("serial");
+                if (uint.TryParse(serialString, out uint serialValue))
+                {
+                    _localSerial = serialValue;
+                    if (xml.HasAttribute("entity"))
+                    {
+                        // Recupera o JSON do atributo "entity"
+                        string json = xml.GetAttribute("entity");
+
+                        // Desserializa o JSON para o objeto Entity
+                        _localEntity = JsonSerializer.Deserialize<Entity>(json);
+                    }
+                    _outOfRange = true;
+                    BuildGump();
+                } else
+                {
+                    _localSerial = 1213;
+                    if (xml.HasAttribute("entity"))
+                    {
+                        // Recupera o JSON do atributo "entity"
+                        string json = xml.GetAttribute("entity");
+
+                        // Desserializa o JSON para o objeto Entity
+                        _localEntity = JsonSerializer.Deserialize<Entity>(json);
+                    }
+                    _outOfRange = true;
+                    BuildGump();
+                }
+                
+                
             }
             else
             {
@@ -191,7 +226,7 @@ namespace ClassicUO.Game.UI.Gumps
                 return;
             }
 
-            if (World.Get(LocalSerial) == null)
+            if (World.Get(_localSerial) == null)
             {
                 return;
             }
@@ -205,7 +240,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             if (TargetManager.IsTargeting)
             {
-                TargetManager.Target(LocalSerial);
+                TargetManager.Target(_localSerial);
                 Mouse.LastLeftButtonClickTime = 0;
             }
             // ## BEGIN - END ## // MISC
@@ -273,7 +308,7 @@ namespace ClassicUO.Game.UI.Gumps
                     TextType.CLIENT
                 );
                 ProfileManager.CurrentProfile.FollowingMode = true;
-                ProfileManager.CurrentProfile.FollowingTarget = LocalSerial;
+                ProfileManager.CurrentProfile.FollowingTarget = _localSerial;
             }
         }
         // ## BEGIN - END ## // TAZUO
@@ -291,29 +326,35 @@ namespace ClassicUO.Game.UI.Gumps
                 // ## BEGIN - END ## // MISC
                 //_targetBroke = true;
                 // ## BEGIN - END ## // MISC
-                TargetManager.Target(LocalSerial);
+
+                TargetManager.Target(_localSerial);
                 // ## BEGIN - END ## // MISC
-                Entity ent = World.Get(LocalSerial);
+                Entity ent = World.Get(_localSerial);
+                
                 if (ent == null)
                 {
-                    if (LocalEntity != null)
+                    if (_localEntity != null)
                     {
-                        TargetManager.LastTargetInfo.Serial = LocalEntity.Serial;
-                        TargetManager.TargetFromHealthBar(LocalSerial, LocalEntity);
+                        
+                        GameActions.Print(World.Player, $"Target OutRange: {_name}");
+                        TargetManager.LastTargetInfo.Serial = _localSerial;
+                        TargetManager.TargetFromHealthBar(_localSerial);
+                        
                     } else
                     {
 
                         Entity cachedEntity;
-                        if (entityCache.TryGetValue(LocalSerial, out cachedEntity))
+                        if (entityCache.TryGetValue(_localSerial, out cachedEntity))
                         {
-                            
 
+                            GameActions.Print(World.Player, $"Target OutRange : {cachedEntity.Name}");
                             TargetManager.LastTargetInfo.Serial = cachedEntity.Serial;
-                            TargetManager.TargetFromHealthBar(LocalSerial, cachedEntity);
+                            TargetManager.TargetFromHealthBar(_localSerial);
+                            
                         }
                         else
                         {
-                            GameActions.Print($"No has info for Target, need see for updates info.", 88);
+                            GameActions.Print($"No has info for Target, need see for updates infos.", 88);
                         }
 
                        
@@ -356,7 +397,7 @@ namespace ClassicUO.Game.UI.Gumps
                 UIManager.SystemChat?.SetFocus();
             }
 
-            Entity entity = World.Get(LocalSerial);
+            Entity entity = World.Get(_localSerial);
 
             if (entity != null)
             {
@@ -388,7 +429,7 @@ namespace ClassicUO.Game.UI.Gumps
 
         protected override void OnKeyDown(SDL.SDL_Keycode key, SDL.SDL_Keymod mod)
         {
-            Entity entity = World.Get(LocalSerial);
+            Entity entity = World.Get(_localSerial);
 
             if (entity == null || SerialHelper.IsItem(entity.Serial))
             {
@@ -406,7 +447,7 @@ namespace ClassicUO.Game.UI.Gumps
 
         protected override void OnMouseOver(int x, int y)
         {
-            Entity entity = World.Get(LocalSerial);
+            Entity entity = World.Get(_localSerial);
 
             if (entity != null)
             {
@@ -420,7 +461,7 @@ namespace ClassicUO.Game.UI.Gumps
 
         protected bool CheckIfAnchoredElseDispose()
         {
-            if (UIManager.AnchorManager[this] == null && LocalSerial != World.Player)
+            if (UIManager.AnchorManager[this] == null && _localSerial != World.Player)
             {
                 Dispose();
 
@@ -519,12 +560,12 @@ namespace ClassicUO.Game.UI.Gumps
                 return;
             }
 
-            bool inparty = World.Party.Contains(LocalSerial);
+            bool inparty = World.Party.Contains(_localSerial);
 
 
             ushort textColor = 0x0386;
 
-            Entity entity = World.Get(LocalSerial);
+            Entity entity = World.Get(_localSerial);
 
             if (entity is Item it && it.Layer == 0 && it.Container == World.Player)
             {
@@ -533,7 +574,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             if (entity == null || entity.IsDestroyed)
             {
-                if (LocalSerial != World.Player && (ProfileManager.CurrentProfile.CloseHealthBarType == 1 || ProfileManager.CurrentProfile.CloseHealthBarType == 2 && World.CorpseManager.Exists(0, LocalSerial | 0x8000_0000)))
+                if (_localSerial != World.Player && (ProfileManager.CurrentProfile.CloseHealthBarType == 1 || ProfileManager.CurrentProfile.CloseHealthBarType == 2 && World.CorpseManager.Exists(0, _localSerial | 0x8000_0000)))
                 {
                     //### KEEPS PARTY BAR ACTIVE WHEN PARTY MEMBER DIES & MOBILEBAR CLOSE SELECTED ###//
                     if (!inparty && CheckIfAnchoredElseDispose())
@@ -554,9 +595,9 @@ namespace ClassicUO.Game.UI.Gumps
                     _outOfRange = true;
                     textColor = 912;
 
-                    if (TargetManager.LastAttack != LocalSerial)
+                    if (TargetManager.LastAttack != _localSerial)
                     {
-                        GameActions.SendCloseStatus(LocalSerial);
+                        GameActions.SendCloseStatus(_localSerial);
                     }
                     
                     if (inparty)
@@ -935,7 +976,7 @@ namespace ClassicUO.Game.UI.Gumps
                     }
 
                     //MAKE IT FLASH
-                    if (ProfileManager.CurrentProfile.FlashingHealthbarOutlineAll || ProfileManager.CurrentProfile.FlashingHealthbarOutlineSelf && LocalSerial == World.Player || ProfileManager.CurrentProfile.FlashingHealthbarOutlineParty && inparty || ProfileManager.CurrentProfile.FlashingHealthbarOutlineGreen && mobile.NotorietyFlag == NotorietyFlag.Ally || ProfileManager.CurrentProfile.FlashingHealthbarOutlineOrange && mobile.NotorietyFlag == NotorietyFlag.Enemy)
+                    if (ProfileManager.CurrentProfile.FlashingHealthbarOutlineAll || ProfileManager.CurrentProfile.FlashingHealthbarOutlineSelf && _localSerial == World.Player || ProfileManager.CurrentProfile.FlashingHealthbarOutlineParty && inparty || ProfileManager.CurrentProfile.FlashingHealthbarOutlineGreen && mobile.NotorietyFlag == NotorietyFlag.Ally || ProfileManager.CurrentProfile.FlashingHealthbarOutlineOrange && mobile.NotorietyFlag == NotorietyFlag.Enemy)
                     {
                         if (mobile.FlashTimeTick > Time.Ticks - 500)
                             _flash[0].IsVisible = _flash[1].IsVisible = _flash[2].IsVisible = _flash[3].IsVisible = true;
@@ -954,7 +995,7 @@ namespace ClassicUO.Game.UI.Gumps
                     _bars[0].LineWidth = hits;
                 }
 
-                if ((inparty || LocalSerial == World.Player) && mobile != null && _bars != null)
+                if ((inparty || _localSerial == World.Player) && mobile != null && _bars != null)
                 {
                     int mana = CalculatePercents(mobile.ManaMax, mobile.Mana, HPB_BAR_WIDTH);
                     int stam = CalculatePercents(mobile.StaminaMax, mobile.Stamina, HPB_BAR_WIDTH);
@@ -977,7 +1018,7 @@ namespace ClassicUO.Game.UI.Gumps
                 }
             }
 
-            if (LocalSerial == World.Player)
+            if (_localSerial == World.Player)
             {
                 if (World.Player.InWarMode != _oldWarMode)
                 {
@@ -1009,10 +1050,10 @@ namespace ClassicUO.Game.UI.Gumps
         {
             WantUpdateSize = false;
 
-            Entity entity = World.Get(LocalSerial);
+            Entity entity = World.Get(_localSerial);
 
 
-            if (World.Party.Contains(LocalSerial))
+            if (World.Party.Contains(_localSerial))
             {
                 Height = HPB_HEIGHT_MULTILINE;
                 Width = HPB_WIDTH;
@@ -1020,7 +1061,7 @@ namespace ClassicUO.Game.UI.Gumps
                 Add(_background = new AlphaBlendControl(0.7f) { Width = Width, Height = Height, AcceptMouseInput = true, CanMove = true });
 
 
-                if (LocalSerial == World.Player)
+                if (_localSerial == World.Player)
                 {
                     Add
                     (
@@ -1208,7 +1249,7 @@ namespace ClassicUO.Game.UI.Gumps
             }
             else
             {
-                if (LocalSerial == World.Player)
+                if (_localSerial == World.Player)
                 {
                     _oldWarMode = World.Player.InWarMode;
                     Height = HPB_HEIGHT_MULTILINE;
@@ -1693,9 +1734,9 @@ namespace ClassicUO.Game.UI.Gumps
         {
             WantUpdateSize = false;
 
-            Entity entity = World.Get(LocalSerial);
+            Entity entity = World.Get(_localSerial);
 
-            if (World.Party.Contains(LocalSerial))
+            if (World.Party.Contains(_localSerial))
             {
                 Add
                 (
@@ -1709,7 +1750,7 @@ namespace ClassicUO.Game.UI.Gumps
                 Width = 115;
                 Height = 55;
 
-                if (LocalSerial == World.Player)
+                if (_localSerial == World.Player)
                 {
                     Add
                     (
@@ -1804,7 +1845,7 @@ namespace ClassicUO.Game.UI.Gumps
             }
             else
             {
-                if (LocalSerial == World.Player)
+                if (_localSerial == World.Player)
                 {
                     _oldWarMode = World.Player.InWarMode;
 
@@ -1954,13 +1995,13 @@ namespace ClassicUO.Game.UI.Gumps
                 return;
             }
 
-            bool inparty = World.Party.Contains(LocalSerial);
+            bool inparty = World.Party.Contains(_localSerial);
 
 
             ushort textColor = 0x0386;
             ushort hitsColor = 0x0386;
 
-            Entity entity = World.Get(LocalSerial);
+            Entity entity = World.Get(_localSerial);
 
             if (entity is Item it && it.Layer == 0 && it.Container == World.Player)
             {
@@ -1969,7 +2010,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             if (entity == null || entity.IsDestroyed)
             {
-                if (LocalSerial != World.Player && !inparty && (ProfileManager.CurrentProfile.CloseHealthBarType == 1 || ProfileManager.CurrentProfile.CloseHealthBarType == 2 && World.CorpseManager.Exists(0, LocalSerial | 0x8000_0000)))
+                if (_localSerial != World.Player && !inparty && (ProfileManager.CurrentProfile.CloseHealthBarType == 1 || ProfileManager.CurrentProfile.CloseHealthBarType == 2 && World.CorpseManager.Exists(0, LocalSerial | 0x8000_0000)))
                 {
                     if (CheckIfAnchoredElseDispose())
                     {
@@ -1990,9 +2031,9 @@ namespace ClassicUO.Game.UI.Gumps
 
                     _outOfRange = true;
 
-                    if (TargetManager.LastAttack != LocalSerial)
+                    if (TargetManager.LastAttack != _localSerial)
                     {
-                        GameActions.SendCloseStatus(LocalSerial);
+                        GameActions.SendCloseStatus(_localSerial);
                     }
 
                     if (inparty)
@@ -2080,7 +2121,7 @@ namespace ClassicUO.Game.UI.Gumps
                     _isDead = false;
                 }
 
-                if (!string.IsNullOrEmpty(entity.Name) && !(inparty && LocalSerial == World.Player.Serial) && _name != entity.Name)
+                if (!string.IsNullOrEmpty(entity.Name) && !(inparty && _localSerial == World.Player.Serial) && _name != entity.Name)
                 {
                     _name = entity.Name;
 
@@ -2256,7 +2297,7 @@ namespace ClassicUO.Game.UI.Gumps
                 }
 
 
-                if ((inparty || LocalSerial == World.Player) && mobile != null)
+                if ((inparty || _localSerial == World.Player) && mobile != null)
                 {
                     int mana = CalculatePercents(mobile.ManaMax, mobile.Mana, barW);
                     int stam = CalculatePercents(mobile.StaminaMax, mobile.Stamina, barW);
@@ -2283,7 +2324,7 @@ namespace ClassicUO.Game.UI.Gumps
                 }
             }
 
-            if (LocalSerial == World.Player)
+            if (_localSerial == World.Player)
             {
                 if (World.Player.InWarMode != _oldWarMode)
                 {
@@ -2301,14 +2342,14 @@ namespace ClassicUO.Game.UI.Gumps
                 case ButtonParty.Heal1:
                     GameActions.CastSpell(29);
                     World.Party.PartyHealTimer = Time.Ticks + 50;
-                    World.Party.PartyHealTarget = LocalSerial;
+                    World.Party.PartyHealTarget = _localSerial;
 
                     break;
 
                 case ButtonParty.Heal2:
                     GameActions.CastSpell(11);
                     World.Party.PartyHealTimer = Time.Ticks + 50;
-                    World.Party.PartyHealTarget = LocalSerial;
+                    World.Party.PartyHealTarget = _localSerial;
 
                     break;
             }

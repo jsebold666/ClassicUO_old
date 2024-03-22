@@ -1715,6 +1715,53 @@ namespace ClassicUO.Network
             writer.Dispose();
         }
 
+        public static void Send_TargetObjectOut(
+            this NetClient socket,
+            uint entity,
+            ushort graphic,
+            ushort x,
+            ushort y,
+            sbyte z,
+            uint cursorID,
+            byte cursorType
+        )
+        {
+            const byte ID = 0x6C;
+
+            int length = PacketsTable.GetPacketLength(ID);
+
+            var writer = new StackDataWriter(length < 0 ? 64 : length);
+
+            writer.WriteUInt8(ID);
+
+            if (length < 0)
+            {
+                writer.WriteZero(2);
+            }
+
+            writer.WriteUInt8(0xAA);
+            writer.WriteUInt32BE(cursorID);
+            writer.WriteUInt8(cursorType);
+            writer.WriteUInt32BE(entity);
+            writer.WriteUInt16BE(x);
+            writer.WriteUInt16BE(y);
+            writer.WriteUInt16BE((ushort)z);
+            writer.WriteUInt16BE(graphic);
+
+            if (length < 0)
+            {
+                writer.Seek(1, SeekOrigin.Begin);
+                writer.WriteUInt16BE((ushort)writer.BytesWritten);
+            }
+            else
+            {
+                writer.WriteZero(length - writer.BytesWritten);
+            }
+
+            socket.Send(writer.BufferWritten);
+            writer.Dispose();
+        }
+
         public static void Send_TargetObject
         (
             this NetClient socket,

@@ -266,20 +266,18 @@ namespace ClassicUO.Game.Managers
             );
         }
 
-        public static void TargetFromHealthBar(uint serial, Entity? entityOut)
+        public static void TargetFromHealthBar(uint serial)
         {
             if (!IsTargeting)
             {
                 return;
             }
 
-            Entity entitynew = World.InGame ? World.Get(serial) : null;
-
-            Entity entity = World.InGame && entitynew == null && entityOut != null ? entityOut : null;
+            
 
 
 
-            if (entity != null)
+            if (serial != null)
             {
                 switch (TargetingState)
                 {
@@ -291,7 +289,7 @@ namespace ClassicUO.Game.Managers
                     case CursorTarget.HueCommandTarget:
                     case CursorTarget.SetTargetClientSide:
 
-                        if (entity != World.Player)
+                        if (serial != World.Player.Serial)
                         {
                             LastTargetInfo.SetEntity(serial);
                         }
@@ -310,36 +308,37 @@ namespace ClassicUO.Game.Managers
 
                             _lastDataBuffer[6] = (byte)TargetingType;
 
-                            _lastDataBuffer[7] = (byte)(entity.Serial >> 24);
-                            _lastDataBuffer[8] = (byte)(entity.Serial >> 16);
-                            _lastDataBuffer[9] = (byte)(entity.Serial >> 8);
-                            _lastDataBuffer[10] = (byte)entity.Serial;
+                            _lastDataBuffer[7] = (byte)(serial >> 24);
+                            _lastDataBuffer[8] = (byte)(serial >> 16);
+                            _lastDataBuffer[9] = (byte)(serial >> 8);
+                            _lastDataBuffer[10] = (byte)serial;
 
-                            _lastDataBuffer[11] = (byte)(entity.X >> 8);
-                            _lastDataBuffer[12] = (byte)entity.X;
+                            _lastDataBuffer[11] = (byte)(0>> 8);
+                            _lastDataBuffer[12] = (byte)0;
 
-                            _lastDataBuffer[13] = (byte)(entity.Y >> 8);
-                            _lastDataBuffer[14] = (byte)entity.Y;
+                            _lastDataBuffer[13] = (byte)(0 >> 8);
+                            _lastDataBuffer[14] = (byte)0;
 
-                            _lastDataBuffer[15] = (byte)(entity.Z >> 8);
-                            _lastDataBuffer[16] = (byte)entity.Z;
+                            _lastDataBuffer[15] = (byte)(0 >> 8);
+                            _lastDataBuffer[16] = (byte)0;
 
-                            _lastDataBuffer[17] = (byte)(entity.Graphic >> 8);
-                            _lastDataBuffer[18] = (byte)entity.Graphic;
+                            _lastDataBuffer[17] = (byte)(0 >> 8);
+                            _lastDataBuffer[18] = (byte)0;
 
 
-                            NetClient.Socket.Send_TargetObject(entity,
-                                                               entity.Graphic,
-                                                               entity.X,
-                                                               entity.Y,
-                                                               entity.Z,
-                                                               _targetCursorId,
-                                                               (byte)TargetingType);
+                            NetClient.Socket.Send_TargetObjectOut(serial,
+                                                              0,
+                                                              0,
+                                                              0,
+                                                              0,
+                                                              _targetCursorId,
+                                                              (byte)TargetingType);
+                            
+                        }
 
-                            if (SerialHelper.IsMobile(serial) && LastTargetInfo.Serial != serial)
-                            {
-                                GameActions.RequestMobileStatus(serial);
-                            }
+                        if (SerialHelper.IsMobile(serial) && LastTargetInfo.Serial == serial)
+                        {
+                            GameActions.RequestMobileStatus(serial);
                         }
 
                         ClearTargetingWithoutTargetCancelPacket();
@@ -347,59 +346,7 @@ namespace ClassicUO.Game.Managers
                         Mouse.CancelDoubleClick = true;
 
                         break;
-                    case CursorTarget.Grab:
-
-                        if (SerialHelper.IsItem(serial))
-                        {
-                            GameActions.GrabItem(serial, ((Item)entity).Amount);
-                        }
-
-                        ClearTargetingWithoutTargetCancelPacket();
-
-                        return;
-
-                    case CursorTarget.SetGrabBag:
-
-                        if (SerialHelper.IsItem(serial))
-                        {
-                            ProfileManager.CurrentProfile.GrabBagSerial = serial;
-                            GameActions.Print(string.Format(ResGeneral.GrabBagSet0, serial));
-                        }
-
-                        ClearTargetingWithoutTargetCancelPacket();
-
-                        return;
-                    case CursorTarget.IgnorePlayerTarget:
-                        if (SelectedObject.Object is Entity pmEntity)
-                        {
-                            IgnoreManager.AddIgnoredTarget(pmEntity);
-                        }
-                        CancelTarget();
-                        return;
-
-                    // ## BEGIN - END ## // ADVMACROS
-                    case CursorTarget.SetCustomSerial:
-
-                        if (SerialHelper.IsItem(serial))
-                        {
-                            ProfileManager.CurrentProfile.CustomSerial = serial;
-                            GameActions.Print($"Custom UOClassicEquipment Item set: {serial}", 88);
-                        }
-                        else if ((TargetingType == TargetType.Neutral && SerialHelper.IsMobile(serial)))
-                        {
-                            Mobile mobile = entity as Mobile;
-
-                            if ((!World.Player.IsDead && !mobile.IsDead) && serial != World.Player)
-                            {
-                                ProfileManager.CurrentProfile.Mimic_PlayerSerial = entity;
-                                GameActions.Print($"Mimic Player Serial Set: {entity.Name} : {entity.Serial}", 88);
-                            }
-                        }
-
-                        ClearTargetingWithoutTargetCancelPacket();
-
-                        return;
-                        // ## BEGIN - END ## // ADVMACROS
+                   
 
                 }
             }
