@@ -162,8 +162,6 @@ namespace ClassicUO.Game.UI.Gumps
             {
                 writer.WriteAttributeString("name", _name);
                 writer.WriteAttributeString("serial", _localSerial.ToString());
-                string json = JsonSerializer.Serialize(_localEntity);
-                writer.WriteAttributeString("entity", json);
             }
         }
 
@@ -180,38 +178,14 @@ namespace ClassicUO.Game.UI.Gumps
             else if (ProfileManager.CurrentProfile.SaveHealthbars)
             {
                 _name = xml.GetAttribute("name");
-               
-
-                string serialString = xml.GetAttribute("serial");
-                if (uint.TryParse(serialString, out uint serialValue))
-                {
-                    _localSerial = serialValue;
-                    if (xml.HasAttribute("entity"))
-                    {
-                        // Recupera o JSON do atributo "entity"
-                        string json = xml.GetAttribute("entity");
-
-                        // Desserializa o JSON para o objeto Entity
-                        _localEntity = JsonSerializer.Deserialize<Entity>(json);
-                    }
-                    _outOfRange = true;
-                    BuildGump();
-                } else
-                {
-                    _localSerial = 1213;
-                    if (xml.HasAttribute("entity"))
-                    {
-                        // Recupera o JSON do atributo "entity"
-                        string json = xml.GetAttribute("entity");
-
-                        // Desserializa o JSON para o objeto Entity
-                        _localEntity = JsonSerializer.Deserialize<Entity>(json);
-                    }
-                    _outOfRange = true;
-                    BuildGump();
-                }
-                
-                
+              
+                string serial = xml.GetAttribute("serial");
+                if (uint.TryParse(serial, out uint serialValues)) {
+                    _localSerial = serialValues;
+                }  
+          
+                _outOfRange = true;
+                BuildGump();
             }
             else
             {
@@ -331,9 +305,9 @@ namespace ClassicUO.Game.UI.Gumps
                 // ## BEGIN - END ## // MISC
                 Entity ent = World.Get(_localSerial);
                 
-                if (ent == null)
+                if (ent == null && _localSerial != World.Player.Serial)
                 {
-                    if (_localEntity != null)
+                    if (_localEntity != null  )
                     {
                         
                         GameActions.Print(World.Player, $"Target OutRange: {_name}");
